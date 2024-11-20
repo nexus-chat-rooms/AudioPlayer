@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Audio Player.</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            background: url('https://wallpapercave.com/wp/wp4078395.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: white;
+            font-family: 'Arial', sans-serif;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .container {
+            text-align: center;
+            padding: 40px;
+            border-radius: 15px;
+            background: rgba(40, 40, 40, 0.85);
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+            position: relative;
+            width: 90%;
+            max-width: 600px;
+            z-index: 2;
+        }
+
+        h1 {
+            font-size: 3rem;
+            color: #ffffff;
+            text-shadow: 0 0 20px #ffffff, 0 0 40px #ffcc00;
+            margin-bottom: 20px;
+            animation: glow 1.5s infinite alternate;
+        }
+
+        @keyframes glow {
+            0% { text-shadow: 0 0 30px #ffffff, 0 0 40px #ffcc00; }
+            100% { text-shadow: 0 0 40px #ff00cc, 0 0 60px #00ccff; }
+        }
+
+        button,
+        /* Style the custom file input button */
+        input[type="file"] {
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            border: none;
+            border-radius: 10px;
+            margin: 10px 0;
+            background: linear-gradient(135deg, #444, #777);
+            color: #fff;
+            cursor: pointer;
+            outline: none;
+            transition: background 0.3s, transform 0.2s;
+            box-shadow: 0px 0px 15px rgba(255, 255, 255, 0.5);
+            position: relative;
+            display: inline-block;
+        }
+
+        button:hover,
+        /* Hover effect for file input button */
+        input[type="file"]:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #666, #999);
+        }
+
+        input[type="file"]::-webkit-file-upload-button {
+            display: none; /* Hide the default file upload button */
+        }
+
+        .custom-file-upload {
+            display: inline-block;
+            padding: 15px 30px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #444, #777);
+            border-radius: 10px;
+            box-shadow: 0px 0px 15px rgba(255, 255, 255, 0.5);
+            transition: background 0.3s, transform 0.2s;
+        }
+
+        .custom-file-upload:hover {
+            background: linear-gradient(135deg, #666, #999);
+        }
+
+        .play-pause-button {
+            width: 120px;
+            height: 50px;
+            font-size: 1.2rem;
+            background: linear-gradient(135deg, #ff00cc, #00ccff);
+            color: #ffffff;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.8);
+            margin: 20px 0;
+            transition: background 0.3s, box-shadow 0.1s;
+        }
+
+        .play-pause-button:hover {
+            background: linear-gradient(135deg, #00ccff, #ff00cc);
+            box-shadow: 0 0 25px rgba(255, 0, 255, 1);
+        }
+
+        #sidebar {
+            position: fixed;
+            top: 0;
+            right: -300px;
+            width: 300px;
+            height: 100%;
+            background-color: rgba(30, 30, 30, 0.95);
+            color: white;
+            transition: right 0.3s ease;
+            padding: 20px;
+            box-shadow: -5px 0 30px rgba(255, 255, 255, 0.5);
+            border-top-left-radius: 15px;
+            border-bottom-left-radius: 15px;
+            z-index: 2;
+        }
+
+        #sidebar.active {
+            right: 0;
+        }
+
+        .toggle-sidebar {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.3);
+            border: none;
+            border-radius: 50%;
+            padding: 10px;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            transition: background 0.3s;
+        }
+
+        .toggle-sidebar:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .repeat-button {
+            background: rgba(0, 255, 0, 0.5);
+        }
+
+        .repeat-button.active {
+            background: rgba(255, 0, 0, 0.5);
+        }
+
+        .track-list {
+            max-height: 200px;
+            overflow-y: auto;
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        #volumeControl {
+            width: 100%;
+            margin: 20px 0;
+        }
+
+        .progress-container {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            cursor: pointer;
+            height: 8px;
+        }
+
+        .progress-bar {
+            width: 0;
+            height: 100%;
+            background: linear-gradient(135deg, #00ccff, #ff00cc);
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="audioCanvas"></canvas>
+
+    <div class="container">
+        <h1>Nexus Audio Player.</h1>
+        <label class="custom-file-upload">
+            Choose File
+            <input type="file" id="fileInput" accept=".mp3">
+        </label>
+        <button id="playFileButton">Upload & Play</button>
+        <button id="repeatButton" class="repeat-button">Repeat Off</button>
+        <button id="playPauseButton" class="play-pause-button">Play</button>
+        <button class="toggle-sidebar" id="toggleSidebar">&#9776;</button>
+        
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <input type="range" id="volumeControl" min="0" max="1" step="0.01" value="1"/>
+        
+        <div id="sidebar">
+            <h2>Added Soundtracks</h2>
+            <div class="track-list">
+                <label for="playedTracks">MP3 files played:</label>
+                <select id="playedTracks"></select>
+                <label for="ownersTracks">Owner's Soundtracks:</label>
+                <select id="ownersTracks">
+                    <option value="5.ogg">Owner Track 1</option>
+                </select>
+            </div>
+            <button id="playOwnerTrack">Play Owner's Track</button>
+        </div>
+    </div>
+
+    <audio id="audioPlayer"></audio>
+
+    <script>
+        const audioPlayer = document.getElementById('audioPlayer');
+        const playedTracksDropdown = document.getElementById('playedTracks');
+        const sidebar = document.getElementById('sidebar');
+        const repeatButton = document.getElementById('repeatButton');
+        const playPauseButton = document.getElementById('playPauseButton');
+        const volumeControl = document.getElementById('volumeControl');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const canvas = document.getElementById('audioCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let isRepeating = false;
+
+        // Set canvas to full screen
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Create audio context and analyser
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+
+        const sourceNode = audioContext.createMediaElementSource(audioPlayer);
+        sourceNode.connect(analyser);
+        analyser.connect(audioContext.destination);
+
+        // Animation Loop
+        function animate() {
+            requestAnimationFrame(animate);
+            analyser.getByteFrequencyData(dataArray);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            const barWidth = (canvas.width / bufferLength) * 2.5;
+            let x = 0;
+
+            for (let i = 0; i < bufferLength; i++) {
+                const barHeight = dataArray[i] / 2;
+                ctx.fillStyle = `hsl(${i / bufferLength * 360}, 100%, 50%)`;
+                ctx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight);
+                x += barWidth + 1;
+            }
+        }
+
+        // Play or pause the audio
+        playPauseButton.onclick = function () {
+            if (audioPlayer.paused) {
+                audioContext.resume().then(() => {
+                    audioPlayer.play();
+                    playPauseButton.textContent = "Pause";
+                    animate();
+                });
+            } else {
+                audioPlayer.pause();
+                playPauseButton.textContent = "Play";
+            }
+        };
+
+        // Play owner's track
+        document.getElementById('playOwnerTrack').onclick = function () {
+            const selectedOwnerTrack = document.getElementById('ownersTracks').value;
+            playTrack(selectedOwnerTrack);
+        };
+
+        // Handle file upload and play audio
+        document.getElementById('playFileButton').onclick = function () {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            if (file) {
+                const url = URL.createObjectURL(file);
+                playTrack(url);
+                addPlayedTrack(file.name);
+            } else {
+                alert("Please upload an MP3 file.");
+            }
+        };
+
+        // Function to play the track
+        function playTrack(src) {
+            audioPlayer.src = src;
+            audioContext.resume().then(() => {
+                audioPlayer.play();
+                playPauseButton.textContent = "Pause"; // Update button to reflect playing state
+                animate();
+            });
+        }
+
+        // Volume Control
+        volumeControl.oninput = function () {
+            audioPlayer.volume = this.value;
+        };
+
+        // Handle audio progress
+        audioPlayer.ontimeupdate = function () {
+            const progress = (audioPlayer.currentTime / audioPlayer.duration) || 0;
+            progressBar.style.width = progress * 100 + '%';
+        };
+
+        progressContainer.onclick = function (event) {
+            const rect = this.getBoundingClientRect();
+            const offsetX = event.clientX - rect.left;
+            const width = rect.width;
+            const percentage = offsetX / width;
+            audioPlayer.currentTime = percentage * audioPlayer.duration;
+        };
+
+        // Toggle repeat functionality
+        repeatButton.onclick = function () {
+            isRepeating = !isRepeating;
+            repeatButton.classList.toggle('active', isRepeating);
+            repeatButton.textContent = isRepeating ? 'Repeat On' : 'Repeat Off';
+            audioPlayer.loop = isRepeating; // Enable/disable loop
+        };
+
+        function addPlayedTrack(track) {
+            const option = document.createElement('option');
+            option.value = track;
+            option.text = track;
+            playedTracksDropdown.appendChild(option);
+            // Remove the track from owners' select if played
+            for (let i = 0; i < document.getElementById('ownersTracks').options.length; i++) {
+                if (document.getElementById('ownersTracks').options[i].value === track) {
+                    document.getElementById('ownersTracks').remove(i);
+                    break;
+                }
+            }
+        }
+
+        document.getElementById('toggleSidebar').onclick = function () {
+            sidebar.classList.toggle('active');
+        };
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
+</body>
+
+</html>
